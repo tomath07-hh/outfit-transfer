@@ -1,12 +1,541 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 智慧換裝</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #f0ebe3;
+      font-family: Georgia, serif;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    .container {
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 24px; }
+    .header-tag {
+      font-family: monospace;
+      font-size: 9px;
+      letter-spacing: 5px;
+      color: #c9a96e;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f0ebe3, #c9a96e, #f0ebe3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .divider {
+      width: 40px; height: 1px;
+      background: linear-gradient(90deg, transparent, #c9a96e, transparent);
+      margin: 12px auto;
+    }
+
+    /* API Key */
+    .apikey-box {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .apikey-box label {
+      display: block;
+      font-family: monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #c9a96e;
+      margin-bottom: 10px;
+    }
+    .apikey-box p {
+      font-family: monospace;
+      font-size: 11px;
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+    .apikey-box input {
+      width: 100%;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #f0ebe3;
+      font-size: 13px;
+      padding: 10px 12px;
+      font-family: monospace;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .apikey-saved {
+      background: #111;
+      border: 1px solid #c9a96e33;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .apikey-saved span { color: #c9a96e; font-size: 11px; font-family: monospace; }
+    .apikey-saved button {
+      background: none; border: none;
+      color: #555; font-size: 11px;
+      font-family: monospace; cursor: pointer;
+    }
+
+    /* Upload Grid */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .upload-slot { display: flex; flex-direction: column; gap: 8px; }
+
+    .preview-box {
+      aspect-ratio: 3/4;
+      border-radius: 12px;
+      border: 2px dashed #2a2a2a;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .preview-box.has-image { border-color: #c9a96e44; }
+    .preview-box img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .preview-box .overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 10px 10px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      color: #c9a96e; font-size: 10px;
+      font-family: monospace; text-align: center; letter-spacing: 2px;
+    }
+    .preview-placeholder { text-align: center; padding: 14px; }
+    .preview-placeholder .icon { font-size: 36px; margin-bottom: 8px; }
+    .preview-placeholder .lbl { color: #c9a96e; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .preview-placeholder .sub { color: #444; font-size: 10px; font-family: monospace; }
+
+    .upload-btn-label {
+      display: block;
+      text-align: center;
+      padding: 12px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: all 0.15s;
+    }
+    .upload-btn-label.empty {
+      background: #1e1500;
+      border: 1px solid #c9a96e;
+      color: #c9a96e;
+    }
+    .upload-btn-label.filled {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      color: #666;
+    }
+
+    /* Main Button */
+    .main-btn {
+      display: block; width: 100%; padding: 14px;
+      border-radius: 10px;
+      font-family: monospace; font-size: 12px;
+      font-weight: 700; letter-spacing: 2px;
+      cursor: pointer; margin-bottom: 16px;
+      touch-action: manipulation;
+      transition: all 0.2s;
+      border: 1px solid #222;
+      background: #161616;
+      color: #444;
+    }
+    .main-btn.ready {
+      background: linear-gradient(135deg, #c9a96e, #a07840);
+      border-color: #c9a96e;
+      color: #0d0d0d;
+    }
+    .main-btn.ready:active { opacity: 0.85; }
+
+    /* Result */
+    .result-box {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .result-box .result-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1a1a1a;
+      font-family: monospace;
+      font-size: 10px; letter-spacing: 3px;
+      color: #c9a96e;
+    }
+    .result-box img { width: 100%; display: block; }
+
+    .loading-box {
+      background: #111; border: 1px solid #222;
+      border-radius: 12px; padding: 30px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid #222;
+      border-top-color: #c9a96e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: #111; border: 1px solid #333;
+      border-radius: 12px; padding: 20px;
+      text-align: center; margin-bottom: 16px;
+      color: #e07070; font-size: 12px; font-family: monospace;
+    }
+
+    /* Generic button style */
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #c9a96e;
+      background: linear-gradient(135deg, #c9a96e, #a07840);
+      color: #0d0d0d;
+      width: 100%;
+      touch-action: manipulation;
+    }
+
+    /* History */
+    .history-title {
+      font-family: monospace; font-size: 9px;
+      letter-spacing: 4px; color: #333;
+      margin-bottom: 12px; margin-top: 20px;
+    }
+    .history-item {
+      display: flex; gap: 10px;
+      background: #111; border: 1px solid #1a1a1a;
+      border-radius: 10px; padding: 10px;
+      cursor: pointer; margin-bottom: 8px;
+    }
+    .history-item img {
+      width: 38px; height: 50px;
+      border-radius: 5px; object-fit: cover;
+    }
+    .history-item .result-thumb {
+      border: 1px solid #c9a96e44;
+    }
+    .history-item .hint {
+      color: #555; font-size: 10px;
+      font-family: monospace; align-self: center;
+    }
+  </style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
-    <p>Current Date and Time: 2026-04-06 12:30:12</p>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-tag">AI FASHION STUDIO</div>
+      <h1>智慧換裝</h1>
+      <div class="divider"></div>
+    </div>
+
+    <!-- API Key Section -->
+    <div id="apikey-section">
+      <div class="apikey-box">
+        <label>🔑 輸入 GEMINI API KEY</label>
+        <p>請到 aistudio.google.com/api-keys 建立 API Key，貼到下方。Key 只存在你的瀏覽器，不會上傳。</p>
+        <input type="password" id="apikey-input" placeholder="AIzaSy..." />
+        <button class="btn" onclick="saveKey()">確認儲存</button>
+        <div id="key-error" style="color:#e07070;font-size:11px;margin-top:8px;font-family:monospace;display:none;"></div>
+      </div>
+    </div>
+    <div id="apikey-saved-section" style="display:none;">
+      <div class="apikey-saved">
+        <span>✓ API Key 已設定</span>
+        <button onclick="resetKey()">更換</button>
+      </div>
+    </div>
+
+    <!-- Upload Grid -->
+    <div class="upload-grid">
+      <!-- Product -->
+      <div class="upload-slot">
+        <div class="preview-box" id="preview-product">
+          <div class="preview-placeholder">
+            <div class="icon">👗</div>
+            <div class="lbl">商品宣傳照</div>
+            <div class="sub">點下方上傳</div>
+          </div>
+        </div>
+        <input type="file" accept="image/*" id="input-product" style="display:none"
+          onchange="handleFile(this, 'product')" />
+        <label for="input-product" class="upload-btn-label empty" id="btn-product">📷 選擇商品照</label>
+      </div>
+
+      <!-- Subject -->
+      <div class="upload-slot">
+        <div class="preview-box" id="preview-subject">
+          <div class="preview-placeholder">
+            <div class="icon">🧍</div>
+            <div class="lbl">主角照</div>
+            <div class="sub">點下方上傳</div>
+          </div>
+        </div>
+        <input type="file" accept="image/*" id="input-subject" style="display:none"
+          onchange="handleFile(this, 'subject')" />
+        <label for="input-subject" class="upload-btn-label empty" id="btn-subject">📷 選擇主角照</label>
+      </div>
+    </div>
+
+    <!-- Main Action Button -->
+    <button class="main-btn" id="main-btn" onclick="generate()" disabled>
+      ✦ 開始 AI 換裝 ✦
+    </button>
+
+    <!-- Output -->
+    <div id="output"></div>
+
+    <!-- History -->
+    <div id="history-section" style="display:none;">
+      <div class="history-title">歷史紀錄</div>
+      <div id="history-list"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let apiKey = localStorage.getItem("gemini_key") || "";
+    let images = { product: null, subject: null };
+    let history = [];
+
+    // Init
+    if (apiKey) showSaved();
+
+    function saveKey() {
+      const val = document.getElementById("apikey-input").value.trim();
+      const err = document.getElementById("key-error");
+      if (!val.startsWith("AIza")) {
+        err.textContent = "格式不對，Key 應以 AIza 開頭";
+        err.style.display = "block";
+        return;
+      }
+      err.style.display = "none";
+      apiKey = val;
+      localStorage.setItem("gemini_key", val);
+      showSaved();
+    }
+
+    function showSaved() {
+      document.getElementById("apikey-section").style.display = "none";
+      document.getElementById("apikey-saved-section").style.display = "block";
+      updateBtn();
+    }
+
+    function resetKey() {
+      apiKey = "";
+      localStorage.removeItem("gemini_key");
+      document.getElementById("apikey-input").value = "";
+      document.getElementById("apikey-section").style.display = "block";
+      document.getElementById("apikey-saved-section").style.display = "none";
+      updateBtn();
+    }
+
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX = 1024;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          callback(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleFile(input, type) {
+      const file = input.files[0];
+      if (!file) return;
+      compressImage(file, (dataUrl) => {
+        images[type] = dataUrl;
+        // Update preview
+        const preview = document.getElementById(`preview-${type}`);
+        preview.classList.add("has-image");
+        preview.innerHTML = `
+          <img src="${dataUrl}" alt="${type}" />
+          <div class="overlay">✓ ${type === "product" ? "商品宣傳照" : "主角照"}</div>
+        `;
+        // Update button label
+        const btn = document.getElementById(`btn-${type}`);
+        btn.textContent = "🔄 更換";
+        btn.className = "upload-btn-label filled";
+        updateBtn();
+      });
+      input.value = "";
+    }
+
+    function updateBtn() {
+      const btn = document.getElementById("main-btn");
+      const ready = images.product && images.subject && apiKey;
+      btn.disabled = !ready;
+      btn.className = ready ? "main-btn ready" : "main-btn";
+    }
+
+    async function generate() {
+      if (!images.product || !images.subject || !apiKey) return;
+
+      const btn = document.getElementById("main-btn");
+      btn.disabled = true;
+      btn.className = "main-btn";
+
+      const output = document.getElementById("output");
+      output.innerHTML = `
+        <div class="loading-box">
+          <div class="spinner"></div>
+          <div style="color:#c9a96e;font-size:13px;margin-bottom:4px">AI 換裝生成中...</div>
+          <div style="color:#555;font-size:11px;font-family:monospace">約需 20–40 秒，請稍候</div>
+        </div>
+      `;
+
+      const b64 = (d) => d.split(",")[1];
+      const mime = (d) => d.split(";")[0].split(":")[1];
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: `你是專業AI換裝設計師。任務：將第一張圖（商品宣傳照）中的服裝，換穿到第二張圖（主角照）的人物身上。要求：保留主角臉部、髮型、膚色、體型完全不變；完整呈現商品服裝的顏色與款式；保留主角的背景；讓效果自然真實。第一張是商品宣傳照：` },
+                  { inline_data: { mime_type: mime(images.product), data: b64(images.product) } },
+                  { text: "第二張是主角照：" },
+                  { inline_data: { mime_type: mime(images.subject), data: b64(images.subject) } },
+                  { text: "請生成換裝後的完整圖片。" }
+                ]
+              }],
+              generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+            })
+          }
+        );
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        let imgData = null, textData = null;
+        for (const part of parts) {
+          if (part.inlineData?.mimeType?.startsWith("image/")) {
+            imgData = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          }
+          if (part.text) textData = part.text;
+        }
+
+        if (imgData) {
+          output.innerHTML = `
+            <div class="result-box">
+              <div class="result-header">✨ 換裝結果</div>
+              <img src="${imgData}" alt="換裝結果" />
+              <div style="padding:12px;text-align:center">
+                <a href="${imgData}" download="outfit-result.jpg"
+                  style="color:#c9a96e;font-family:monospace;font-size:11px;text-decoration:none;">
+                  ⬇ 儲存圖片
+                </a>
+              </div>
+            </div>
+          `;
+          // Add to history
+          history.unshift({ product: images.product, subject: images.subject, result: imgData });
+          if (history.length > 4) history.pop();
+          renderHistory();
+        } else if (textData) {
+          output.innerHTML = `
+            <div class="result-box">
+              <div class="result-header">AI 回覆</div>
+              <div style="padding:16px;color:#d0c9bf;font-size:13px;line-height:1.8;white-space:pre-wrap">${textData}</div>
+            </div>
+          `;
+        } else {
+          throw new Error("未收到圖片，請重試一次");
+        }
+
+      } catch (e) {
+        output.innerHTML = `<div class="error-box">⚠️ ${e.message}</div>`;
+      }
+
+      updateBtn();
+    }
+
+    function renderHistory() {
+      if (history.length === 0) return;
+      const section = document.getElementById("history-section");
+      const list = document.getElementById("history-list");
+      section.style.display = "block";
+      list.innerHTML = history.map((item, i) => `
+        <div class="history-item" onclick="showHistory(${i})">
+          <img src="${item.product}" alt="product" />
+          <img src="${item.subject}" alt="subject" />
+          <img src="${item.result}" alt="result" class="result-thumb" />
+          <div class="hint">點擊查看</div>
+        </div>
+      `).join("");
+    }
+
+    function showHistory(i) {
+      const item = history[i];
+      const output = document.getElementById("output");
+      output.innerHTML = `
+        <div class="result-box">
+          <div class="result-header">✨ 換裝結果（歷史）</div>
+          <img src="${item.result}" alt="換裝結果" />
+          <div style="padding:12px;text-align:center">
+            <a href="${item.result}" download="outfit-result.jpg"
+              style="color:#c9a96e;font-family:monospace;font-size:11px;text-decoration:none;">
+              ⬇ 儲存圖片
+            </a>
+          </div>
+        </div>
+      `;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  </script>
 </body>
 </html>
